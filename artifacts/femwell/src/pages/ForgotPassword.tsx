@@ -18,10 +18,19 @@ export default function ForgotPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  const onSubmit = async () => {
+  const onSubmit = async (data: FormData) => {
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setSent(true);
+    try {
+      const { sendPasswordResetEmail } = await import("firebase/auth");
+      const { auth } = await import("@/lib/firebase");
+      await sendPasswordResetEmail(auth, data.email);
+      setSent(true);
+    } catch (error: any) {
+      console.error("Error sending reset email", error);
+      // Even on error, for security reasons it's often best practice to show "Sent" 
+      // so attackers can't verify if an email exists, but here you could also show a toast error.
+      setSent(true); 
+    }
     setIsLoading(false);
   };
 
