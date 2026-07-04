@@ -1,0 +1,339 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: FemWell PCOS Screening API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: profile
+    description: User profile operations
+  - name: assessments
+    description: PCOS assessment operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get user profile
+      security:
+        - clerkAuth: []
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "404":
+          description: Not found
+    put:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Update user profile
+      security:
+        - clerkAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+
+  /assessments:
+    get:
+      operationId: listAssessments
+      tags: [assessments]
+      summary: List all assessments for the current user
+      security:
+        - clerkAuth: []
+      responses:
+        "200":
+          description: List of assessments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Assessment"
+    post:
+      operationId: createAssessment
+      tags: [assessments]
+      summary: Submit a new PCOS screening assessment
+      security:
+        - clerkAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssessmentInput"
+      responses:
+        "201":
+          description: Assessment result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+
+  /assessments/latest:
+    get:
+      operationId: getLatestAssessment
+      tags: [assessments]
+      summary: Get the most recent assessment for the current user
+      security:
+        - clerkAuth: []
+      responses:
+        "200":
+          description: Latest assessment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+        "404":
+          description: No assessments found
+
+  /assessments/{id}:
+    get:
+      operationId: getAssessment
+      tags: [assessments]
+      summary: Get a specific assessment by ID
+      security:
+        - clerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Assessment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+        "404":
+          description: Not found
+
+  /assessments/stats:
+    get:
+      operationId: getAssessmentStats
+      tags: [assessments]
+      summary: Get summary statistics for the current user's assessments
+      security:
+        - clerkAuth: []
+      responses:
+        "200":
+          description: Assessment statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssessmentStats"
+
+components:
+  securitySchemes:
+    clerkAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        fullName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - createdAt
+        - updatedAt
+
+    ProfileInput:
+      type: object
+      properties:
+        fullName:
+          type: string
+
+    SurveyResponses:
+      type: object
+      properties:
+        irregularPeriods:
+          type: boolean
+        periodFrequency:
+          type: string
+          enum: [monthly, every2to3months, rarely, none]
+        excessiveHairGrowth:
+          type: boolean
+        acneOrOilySkin:
+          type: boolean
+        hairThinning:
+          type: boolean
+        weightGain:
+          type: boolean
+        skinDarkening:
+          type: boolean
+        familyHistory:
+          type: boolean
+        difficultyConceiving:
+          type: string
+          enum: [yes, no, na]
+        moodChanges:
+          type: boolean
+      required:
+        - irregularPeriods
+        - periodFrequency
+        - excessiveHairGrowth
+        - acneOrOilySkin
+        - hairThinning
+        - weightGain
+        - skinDarkening
+        - familyHistory
+        - difficultyConceiving
+        - moodChanges
+
+    LabResults:
+      type: object
+      properties:
+        lh:
+          type: ["number", "null"]
+        fsh:
+          type: ["number", "null"]
+        totalTestosterone:
+          type: ["number", "null"]
+        amh:
+          type: ["number", "null"]
+        fastingInsulin:
+          type: ["number", "null"]
+        fastingGlucose:
+          type: ["number", "null"]
+
+    AssessmentInput:
+      type: object
+      properties:
+        age:
+          type: integer
+        weight:
+          type: number
+        height:
+          type: number
+        bmi:
+          type: number
+        surveyResponses:
+          $ref: "#/components/schemas/SurveyResponses"
+        labResults:
+          $ref: "#/components/schemas/LabResults"
+      required:
+        - age
+        - weight
+        - height
+        - bmi
+        - surveyResponses
+
+    Assessment:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        age:
+          type: integer
+        weight:
+          type: number
+        height:
+          type: number
+        bmi:
+          type: number
+        surveyResponses:
+          $ref: "#/components/schemas/SurveyResponses"
+        labResults:
+          $ref: "#/components/schemas/LabResults"
+        pcosProbability:
+          type: number
+        pcosLikelihood:
+          type: string
+          enum: [Unlikely, Possible, Likely]
+        contributingFactors:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - age
+        - weight
+        - height
+        - bmi
+        - surveyResponses
+        - pcosProbability
+        - pcosLikelihood
+        - contributingFactors
+        - createdAt
+
+    AssessmentStats:
+      type: object
+      properties:
+        totalAssessments:
+          type: integer
+        latestProbability:
+          type: ["number", "null"]
+        latestLikelihood:
+          type: ["string", "null"]
+        averageProbability:
+          type: ["number", "null"]
+        unlikelyCount:
+          type: integer
+        possibleCount:
+          type: integer
+        likelyCount:
+          type: integer
+      required:
+        - totalAssessments
+        - unlikelyCount
+        - possibleCount
+        - likelyCount
